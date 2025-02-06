@@ -1,21 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X, Moon, Sun } from 'lucide-react';
-import { useThemeStore } from '../store/theme';
+import {Menu, X, Moon, Sun, FolderKanban} from 'lucide-react';
+import { useThemeStore } from '../../../store/theme';
+import { useLocation } from 'react-router-dom';
+import * as Config from '../../../lib/config';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { isDarkMode, toggleTheme } = useThemeStore();
 
+  const location = useLocation();
+
   useEffect(() => {
+    if (location.hash) {
+      const element = document.querySelector(location.hash);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [location]);
 
   return (
     <nav
@@ -27,9 +38,10 @@ export default function Navbar() {
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center space-x-2">
+          <Link to="#home" className="flex items-center space-x-2">
+            <FolderKanban className="h-7 w-7 text-primary-600 dark:text-primary-400"/>
             <span className="text-xl font-bold text-primary-600 dark:text-primary-400">
-              Indie SaaS Manager
+              {Config.APP_NAME}
             </span>
           </Link>
 
@@ -42,17 +54,23 @@ export default function Navbar() {
               Features
             </Link>
             <Link
+                to="#comparison"
+                className="text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+            >
+              Comparison
+            </Link>
+            <Link
               to="#pricing"
               className="text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
             >
               Pricing
             </Link>
-            <Link
-              to="#about"
-              className="text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-            >
-              About
-            </Link>
+            {/*<Link*/}
+            {/*  to="#about"*/}
+            {/*  className="text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"*/}
+            {/*>*/}
+            {/*  About*/}
+            {/*</Link>*/}
             <button
               onClick={toggleTheme}
               className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"

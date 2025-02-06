@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Star, 
-  Users, 
-  MoreVertical, 
-  Calendar, 
-  Pencil, 
+import {
+  Star,
+  Users,
+  MoreVertical,
+  Calendar,
+  Pencil,
   Archive,
   Trash2,
   Rocket,
@@ -17,10 +17,11 @@ import {
   UserX,
   Globe,
   Twitter,
-  Loader2
+  Loader2,
+  FilePenLine
 } from 'lucide-react';
 import type { Project, ProjectMember } from '../../lib/types';
-import { doc, updateDoc, deleteDoc, collection, addDoc, query, where, getDocs } from 'firebase/firestore';
+import {doc, updateDoc, deleteDoc, collection, addDoc, query, where, getDocs, Timestamp} from 'firebase/firestore';
 import { db, auth } from '../../lib/firebase';
 import { toast } from 'react-hot-toast';
 
@@ -32,9 +33,12 @@ interface ProjectHeaderProps {
 export default function ProjectHeader({ project, onProjectUpdate }: ProjectHeaderProps) {
   const navigate = useNavigate();
   const [isEditingName, setIsEditingName] = useState(false);
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [projectName, setProjectName] = useState(project.name);
+  const [projectDescription, setProjectDescription] = useState(project.description || '');
   const [isStarred, setIsStarred] = useState(project.isStarred || false);
   const [showMenu, setShowMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showSuccessStoryModal, setShowSuccessStoryModal] = useState(false);
@@ -80,18 +84,46 @@ export default function ProjectHeader({ project, onProjectUpdate }: ProjectHeade
         name: projectName.trim(),
         updatedAt: new Date()
       };
-      
+
       await updateDoc(doc(db, 'projects', project.id), {
         name: projectName.trim(),
         updatedAt: new Date()
       });
-      
+
       onProjectUpdate(updatedProject);
       toast.success('Project name updated');
       setIsEditingName(false);
     } catch (error) {
       toast.error('Failed to update project name');
       setProjectName(project.name);
+    }
+  };
+
+  const handleDescriptionUpdate = async () => {
+    if (!projectDescription.trim() || projectDescription === project.description) {
+      setIsEditingDescription(false);
+      setProjectDescription(project.description || '');
+      return;
+    }
+
+    try {
+      const updatedProject = {
+        ...project,
+        description: projectDescription.trim(),
+        updatedAt: new Date()
+      };
+
+      await updateDoc(doc(db, 'projects', project.id), {
+        description: projectDescription.trim(),
+        updatedAt: new Date()
+      });
+
+      onProjectUpdate(updatedProject);
+      toast.success('Project description updated');
+      setIsEditingDescription(false);
+    } catch (error) {
+      toast.error('Failed to update project description');
+      setProjectDescription(project.description || '');
     }
   };
 
@@ -106,12 +138,12 @@ export default function ProjectHeader({ project, onProjectUpdate }: ProjectHeade
       };
 
       await updateDoc(doc(db, 'projects', project.id), updates);
-      
+
       const updatedProject = {
         ...project,
         ...updates
       };
-      
+
       onProjectUpdate(updatedProject);
       toast.success(project.status === 'pre_launch' ? 'Project launched! 🚀' : 'Project status updated');
     } catch (error) {
@@ -121,18 +153,20 @@ export default function ProjectHeader({ project, onProjectUpdate }: ProjectHeade
 
   const handleDateUpdate = async (date: Date | null) => {
     try {
+      date = Timestamp.fromDate(date);
+
       const updates = {
         [project.status === 'pre_launch' ? 'expectedLaunchDate' : 'actualLaunchDate']: date,
         updatedAt: new Date()
       };
 
       await updateDoc(doc(db, 'projects', project.id), updates);
-      
+
       const updatedProject = {
         ...project,
         ...updates
       };
-      
+
       onProjectUpdate(updatedProject);
       toast.success('Launch date updated');
     } catch (error) {
@@ -152,7 +186,7 @@ export default function ProjectHeader({ project, onProjectUpdate }: ProjectHeade
         isStarred: !isStarred,
         updatedAt: new Date()
       });
-      
+
       onProjectUpdate(updatedProject);
       setIsStarred(!isStarred);
       toast.success(isStarred ? 'Removed from favorites' : 'Added to favorites');
@@ -170,7 +204,7 @@ export default function ProjectHeader({ project, onProjectUpdate }: ProjectHeade
       const usersRef = collection(db, 'users');
       const q = query(usersRef, where('email', '==', inviteEmail.trim()));
       const userSnapshot = await getDocs(q);
-      
+
       if (userSnapshot.empty) {
         toast.error('User not found. They need to create an account first.');
         return;
@@ -181,7 +215,7 @@ export default function ProjectHeader({ project, onProjectUpdate }: ProjectHeade
       // Check if already a member
       const membersRef = collection(db, 'project_members');
       const memberQuery = query(
-        membersRef, 
+        membersRef,
         where('projectId', '==', project.id),
         where('userId', '==', userId)
       );
@@ -222,6 +256,11 @@ export default function ProjectHeader({ project, onProjectUpdate }: ProjectHeade
     }
   };
 
+  const handleEdit = () => {
+    // setIsEditingDescription(true);
+    setIsEditingName(true);
+  }
+
   const handleArchive = async () => {
     try {
       const updatedProject = {
@@ -234,7 +273,7 @@ export default function ProjectHeader({ project, onProjectUpdate }: ProjectHeade
         archived: true,
         updatedAt: new Date()
       });
-      
+
       onProjectUpdate(updatedProject);
       toast.success('Project archived');
       navigate('/dashboard');
@@ -252,12 +291,12 @@ export default function ProjectHeader({ project, onProjectUpdate }: ProjectHeade
     try {
       // Delete all related data
       const collections = ['tasks', 'milestones', 'notes', 'project_members', 'project_links'];
-      
+
       for (const collectionName of collections) {
         const itemsRef = collection(db, collectionName);
         const q = query(itemsRef, where('projectId', '==', project.id));
         const snapshot = await getDocs(q);
-        
+
         for (const doc of snapshot.docs) {
           await deleteDoc(doc.ref);
         }
@@ -302,12 +341,18 @@ export default function ProjectHeader({ project, onProjectUpdate }: ProjectHeade
     }
   };
 
+  const canRemoveMember = (member: Member) => {
+    if (isAdmin && member.role !== "owner") return true;
+    if (!isAdmin && member.userId === auth.currentUser?.uid) return true;
+    return false;
+  };
+
   return (
     <>
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6">
         <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1 flex-1">
+          <div className="flex flex-col sm:flex-row items-center justify-between">
+            <div className="space-y-1 flex-1 w-full">
               {isEditingName ? (
                 <div className="flex items-center space-x-2">
                   <input
@@ -327,22 +372,131 @@ export default function ProjectHeader({ project, onProjectUpdate }: ProjectHeade
                   />
                 </div>
               ) : (
-                <div className="flex items-center space-x-2">
-                  <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-                    {project.name}
-                  </h1>
-                  <button
-                    onClick={() => setIsEditingName(true)}
-                    className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                </div>
+                  <div className="flex items-center justify-between space-x-2">
+                    <h1 className="text-2xl font-semibold text-gray-900 dark:text-white" onClick={() => setIsEditingName(true)}>
+                      {project.name}
+                    </h1>
+                    <div className="relative md:hidden">
+                      <button
+                          onClick={() => setShowMobileMenu(!showMobileMenu)}
+                          className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                      >
+                        <MoreVertical className="h-5 w-5"/>
+                      </button>
+                      {showMobileMenu && (
+                        <div className="absolute right-0 mt-2 w-48 rounded-lg shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50">
+                          <div className="py-1">
+                            <button
+                                onClick={() => setIsEditingName(true)}
+                                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                            >
+                              <Pencil className="h-4 w-4 mr-2"/>
+                              Edit Name
+                            </button>
+                            <button
+                                onClick={() => setIsEditingDescription(true)}
+                                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                            >
+                              <FilePenLine className="h-4 w-4 mr-2"/>
+                              Edit Description
+                            </button>
+                            <button
+                                onClick={handleStatusUpdate}
+                                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                            >
+                              <Rocket className="h-4 w-4 mr-2"/>
+                              {project.status === 'pre_launch' ? 'Launch Project' : 'Revert to Pre-launch'}
+                            </button>
+                            <button
+                                onClick={handleStarToggle}
+                                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                            >
+                              <Star className="h-4 w-4 mr-2"/>
+                              {isStarred ? 'Remove from favorites' : 'Add to favorites'}
+                            </button>
+                            <button
+                                onClick={() => setShowSuccessStoryModal(true)}
+                                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                            >
+                              <MessageSquare className="h-4 w-4 mr-2"/>
+                              Share Your Story
+                            </button>
+                            <button
+                                onClick={() => setShowShareModal(true)}
+                                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                            >
+                              <Users className="h-4 w-4 mr-2"/>
+                              Invite Members
+                            </button>
+                            <button
+                                onClick={handleArchive}
+                                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                            >
+                              <Archive className="h-4 w-4 mr-2"/>
+                              Archive Project
+                            </button>
+                            {isAdmin && (
+                                <button
+                                    onClick={() => setShowDeleteModal(true)}
+                                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2"/>
+                                  Delete Project
+                                </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {/*<button*/}
+                    {/*  onClick={() => setIsEditingName(true)}*/}
+                    {/*  className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"*/}
+                    {/*>*/}
+                    {/*  <Pencil className="h-4 w-4" />*/}
+                    {/*</button>*/}
+                  </div>
               )}
-              {project.description && (
-                <p className="text-gray-500 dark:text-gray-400">{project.description}</p>
+
+              {isEditingDescription ? (
+                  <div className="mt-2">
+                    <textarea
+                        value={projectDescription}
+                        onChange={(e) => setProjectDescription(e.target.value)}
+                        onBlur={handleDescriptionUpdate}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleDescriptionUpdate();
+                          }
+                          if (e.key === 'Escape') {
+                            setIsEditingDescription(false);
+                            setProjectDescription(project.description || '');
+                          }
+                        }}
+                        className="w-full p-2 bg-transparent border-b-2 border-primary-500 focus:outline-none focus:border-primary-600 text-gray-900 dark:text-white"
+                        autoFocus
+                    />
+                  </div>
+              ) : (
+                  <div className="mt-2 flex items-center space-x-2">
+                    <p className="text-gray-500 dark:text-gray-400 pr-3" onClick={() => setIsEditingDescription(true)}>
+                      {project.description || ''}
+                    </p>
+                    {/*<button*/}
+                    {/*    onClick={() => setIsEditingDescription(true)}*/}
+                    {/*    className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"*/}
+                    {/*>*/}
+                    {/*  <Pencil className="h-4 w-4" />*/}
+                    {/*</button>*/}
+                  </div>
               )}
-              <div className="flex items-center space-x-4 mt-2">
+
+
+
+              {/*{project.description && (*/}
+              {/*  <p className="text-gray-500 dark:text-gray-400">{project.description}</p>*/}
+              {/*)}*/}
+              <div className="flex items-center space-x-4 pt-2">
                 <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                   project.status === 'pre_launch'
                     ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
@@ -355,8 +509,8 @@ export default function ProjectHeader({ project, onProjectUpdate }: ProjectHeade
                   <Calendar className="h-4 w-4 text-gray-400 mr-1" />
                   <input
                     type="date"
-                    value={project.status === 'pre_launch' 
-                      ? project.expectedLaunchDate?.seconds 
+                    value={project.status === 'pre_launch'
+                      ? project.expectedLaunchDate?.seconds
                         ? new Date(project.expectedLaunchDate.seconds * 1000).toISOString().split('T')[0]
                         : ''
                       : project.actualLaunchDate?.seconds
@@ -375,7 +529,7 @@ export default function ProjectHeader({ project, onProjectUpdate }: ProjectHeade
                 )}
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="hidden md:flex items-center space-x-4">
               <button
                 onClick={handleStarToggle}
                 className={`p-2 rounded-lg transition-colors ${
@@ -386,13 +540,13 @@ export default function ProjectHeader({ project, onProjectUpdate }: ProjectHeade
               >
                 <Star className="h-5 w-5" fill={isStarred ? 'currentColor' : 'none'} />
               </button>
-              
+
               <button
                 onClick={() => setShowSuccessStoryModal(true)}
                 className="inline-flex items-center px-4 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
               >
                 <MessageSquare className="h-4 w-4 mr-2" />
-                Share Your Story
+                <span className="hidden lg:block">Share Your Story</span>
               </button>
 
               <button
@@ -412,27 +566,41 @@ export default function ProjectHeader({ project, onProjectUpdate }: ProjectHeade
                   <div className="absolute right-0 mt-2 w-48 rounded-lg shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50">
                     <div className="py-1">
                       <button
-                        onClick={handleStatusUpdate}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                          onClick={() => setIsEditingName(true)}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
                       >
-                        <Rocket className="h-4 w-4 mr-2" />
+                        <Pencil className="h-4 w-4 mr-2"/>
+                        Edit Name
+                      </button>
+                      <button
+                          onClick={() => setIsEditingDescription(true)}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                      >
+                        <FilePenLine className="h-4 w-4 mr-2"/>
+                        Edit Description
+                      </button>
+                      <button
+                          onClick={handleStatusUpdate}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                      >
+                        <Rocket className="h-4 w-4 mr-2"/>
                         {project.status === 'pre_launch' ? 'Launch Project' : 'Revert to Pre-launch'}
                       </button>
                       <button
-                        onClick={handleArchive}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                          onClick={handleArchive}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
                       >
-                        <Archive className="h-4 w-4 mr-2" />
+                        <Archive className="h-4 w-4 mr-2"/>
                         Archive Project
                       </button>
                       {isAdmin && (
-                        <button
-                          onClick={() => setShowDeleteModal(true)}
-                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete Project
-                        </button>
+                          <button
+                              onClick={() => setShowDeleteModal(true)}
+                              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2"/>
+                            Delete Project
+                          </button>
                       )}
                     </div>
                   </div>
@@ -445,8 +613,8 @@ export default function ProjectHeader({ project, onProjectUpdate }: ProjectHeade
 
       {/* Share Modal */}
       {showShareModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Project Members</h2>
               <button
@@ -471,15 +639,16 @@ export default function ProjectHeader({ project, onProjectUpdate }: ProjectHeade
                         <div>
                           <p className="text-sm font-medium text-gray-900 dark:text-white">{member.email}</p>
                           <p className="text-xs text-gray-500 dark:text-gray-400">{member.role}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{isAdmin ? 'Owner' : 'Member'}</p>
                         </div>
                       </div>
-                      {isAdmin && member.role !== 'owner' && (
-                        <button
-                          onClick={() => handleRemoveMember(member.id)}
-                          className="p-1 text-gray-400 hover:text-red-500"
-                        >
-                          <UserX className="h-4 w-4" />
-                        </button>
+                      {canRemoveMember(member) && (
+                          <button
+                              onClick={() => handleRemoveMember(member.id)}
+                              className="p-1 text-gray-400 hover:text-red-500"
+                          >
+                            <UserX className="h-4 w-4" />
+                          </button>
                       )}
                     </div>
                   ))}
@@ -498,7 +667,7 @@ export default function ProjectHeader({ project, onProjectUpdate }: ProjectHeade
                         id="email"
                         value={inviteEmail}
                         onChange={(e) => setInviteEmail(e.target.value)}
-                        className="pl-10 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        className="pl-10 h-[40px] w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
                         placeholder="colleague@example.com"
                       />
                     </div>

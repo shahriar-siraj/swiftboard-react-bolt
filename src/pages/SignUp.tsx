@@ -6,6 +6,7 @@ import { auth, db } from '../lib/firebase';
 import { toast } from 'react-hot-toast';
 import { UserPlus } from 'lucide-react';
 import { useAuthStore } from '../store/auth';
+import * as Config from '../lib/config';
 
 export default function SignUp() {
   const [fullName, setFullName] = useState('');
@@ -29,7 +30,7 @@ export default function SignUp() {
     try {
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(user, { displayName: fullName });
-      
+
       await setDoc(doc(db, 'users', user.uid), {
         id: user.uid,
         email,
@@ -39,7 +40,7 @@ export default function SignUp() {
         updatedAt: new Date()
       });
 
-      toast.success('Welcome to Indie SaaS Manager!');
+      toast.success('Welcome to ' + Config.APP_NAME);
       navigate('/dashboard');
     } catch (error) {
       toast.error('Failed to create account');

@@ -2,17 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { Navigate, useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { auth, db } from '../lib/firebase';
-import { 
-  doc, 
-  getDoc, 
-  collection, 
-  query, 
-  where, 
+import {
+  doc,
+  getDoc,
+  collection,
+  query,
+  where,
+  orderBy,
   getDocs,
   addDoc,
   deleteDoc,
   updateDoc,
-  serverTimestamp
+  serverTimestamp, Timestamp
 } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
 import { cn } from '../lib/utils';
@@ -68,11 +69,11 @@ export default function ProjectPage() {
           secretsSnapshot,
           linksSnapshot
         ] = await Promise.all([
-          getDocs(query(collection(db, 'tasks'), where('projectId', '==', id))),
-          getDocs(query(collection(db, 'milestones'), where('projectId', '==', id))),
-          getDocs(query(collection(db, 'notes'), where('projectId', '==', id))),
-          getDocs(query(collection(db, 'secrets'), where('projectId', '==', id))),
-          getDocs(query(collection(db, 'project_links'), where('projectId', '==', id)))
+          getDocs(query(collection(db, 'tasks'), where('projectId', '==', id), orderBy('createdAt', 'asc'))),
+          getDocs(query(collection(db, 'milestones'), where('projectId', '==', id), orderBy('createdAt', 'asc'))),
+          getDocs(query(collection(db, 'notes'), where('projectId', '==', id), orderBy('createdAt', 'asc'))),
+          getDocs(query(collection(db, 'secrets'), where('projectId', '==', id), orderBy('createdAt', 'asc'))),
+          getDocs(query(collection(db, 'project_links'), where('projectId', '==', id), orderBy('createdAt', 'asc')))
         ]);
 
         setTasks(tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Task[]);
@@ -99,7 +100,7 @@ export default function ProjectPage() {
         updatedAt: serverTimestamp()
       });
 
-      setTasks(tasks.map(task => 
+      setTasks(tasks.map(task =>
         task.id === taskId ? { ...task, status: completed ? 'done' : 'todo' } : task
       ));
     } catch (error) {
@@ -114,7 +115,7 @@ export default function ProjectPage() {
         updatedAt: serverTimestamp()
       });
 
-      setTasks(tasks.map(task => 
+      setTasks(tasks.map(task =>
         task.id === taskId ? { ...task, ...updates } : task
       ));
       toast.success('Task updated');
@@ -137,14 +138,14 @@ export default function ProjectPage() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const input = formData.get('taskInput') as string;
-    
+
     if (!input.trim()) return;
-    
+
     try {
       const typeMatch = input.match(/#(bug|feature|improvement|general)/i);
       const priorityMatch = input.match(/!(high|medium|low)/i);
       const durationMatch = input.match(/in:(\d+(?:\.\d+)?)\s*(m|min|minute|minutes|h|hr|hour|hours|d|day|days|w|week|weeks)/i);
-      
+
       let title = input
         .replace(/#(bug|feature|improvement|general)/i, '')
         .replace(/!(high|medium|low)/i, '')
@@ -155,7 +156,7 @@ export default function ProjectPage() {
       if (durationMatch) {
         const [_, value, unit] = durationMatch;
         const numValue = parseFloat(value);
-        
+
         switch (unit.toLowerCase()[0]) {
           case 'w':
             duration = `${numValue} week${numValue === 1 ? '' : 's'}`;
@@ -176,9 +177,9 @@ export default function ProjectPage() {
         projectId: id,
         title,
         description: '',
-        type: (typeMatch?.[1].toLowerCase() as Task['type']) || 'general',
+        type: (typeMatch?.[1].toLowerCase() as Task['type']) || 'feature',
         status: 'todo' as const,
-        priority: (priorityMatch?.[1].toLowerCase() as Task['priority']) || 'low',
+        priority: (priorityMatch?.[1].toLowerCase() as Task['priority']) || '',
         duration,
         createdBy: user!.uid,
         createdAt: serverTimestamp(),
@@ -189,7 +190,7 @@ export default function ProjectPage() {
       const task = { id: docRef.id, ...taskData, createdAt: new Date(), updatedAt: new Date() } as Task;
       setTasks([...tasks, task]);
       toast.success('Task added');
-      e.currentTarget.reset();
+      // e.currentTarget.reset();
     } catch (error) {
       toast.error('Failed to add task');
     }
@@ -202,7 +203,7 @@ export default function ProjectPage() {
         updatedAt: serverTimestamp()
       });
 
-      setMilestones(milestones.map(milestone => 
+      setMilestones(milestones.map(milestone =>
         milestone.id === milestoneId ? { ...milestone, completed } : milestone
       ));
     } catch (error) {
@@ -210,15 +211,63 @@ export default function ProjectPage() {
     }
   };
 
-  const handleEditMilestone = async (milestoneId: string, title: string) => {
+  const parseMilestoneDueDate = (input: string) => {
+    // Parse deadline (by:YYYY-MM-DD)
+    const dateMatch = input.match(/by:(\d{4}-\d{2}-\d{2})/);
+
+    // Parse duration (in:Xd)
+    const durationMatch = input.match(/in:(\d+(?:\.\d+)?)\s*(m|min|minute|minutes|h|hr|hour|hours|d|day|days|w|week|weeks)/i);
+
+    // Remove date and duration syntax from title
+    const title = input
+        .replace(/by:\d{4}-\d{2}-\d{2}/, '')
+        .replace(/in:\d+(?:\.\d+)?\s*(?:m|min|minute|minutes|h|hr|hour|hours|d|day|days|w|week|weeks)/i, '')
+        .trim();
+
+    let dueDate = null;
+
+    if (dateMatch) {
+      dueDate = new Date(dateMatch[1]);
+    } else if (durationMatch) {
+      const [_, value, unit] = durationMatch;
+      const numValue = parseFloat(value);
+      const now = new Date();
+
+      switch (unit.toLowerCase()[0]) {
+        case 'w':
+          dueDate = new Date(now.getTime() + numValue * 7 * 24 * 60 * 60 * 1000);
+          break;
+        case 'd':
+          dueDate = new Date(now.getTime() + numValue * 24 * 60 * 60 * 1000);
+          break;
+        case 'h':
+          dueDate = new Date(now.getTime() + numValue * 60 * 60 * 1000);
+          break;
+        case 'm':
+          dueDate = new Date(now.getTime() + numValue * 60 * 1000);
+          break;
+      }
+    }
+
+    if (dueDate) {
+      dueDate = Timestamp.fromDate(dueDate);
+    }
+
+    return { title, dueDate };
+  }
+
+  const handleEditMilestone = async (milestoneId: string, input: string) => {
     try {
+      const { title, dueDate } = parseMilestoneDueDate(input);
+
       await updateDoc(doc(db, 'milestones', milestoneId), {
         title,
+        dueDate,
         updatedAt: serverTimestamp()
       });
 
-      setMilestones(milestones.map(milestone => 
-        milestone.id === milestoneId ? { ...milestone, title } : milestone
+      setMilestones(milestones.map(milestone =>
+        milestone.id === milestoneId ? { ...milestone, title, dueDate } : milestone
       ));
       toast.success('Milestone updated');
     } catch (error) {
@@ -240,46 +289,11 @@ export default function ProjectPage() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const input = formData.get('milestoneInput') as string;
-    
-    if (!input.trim()) return;
-    
-    try {
-      // Parse deadline (by:YYYY-MM-DD)
-      const dateMatch = input.match(/by:(\d{4}-\d{2}-\d{2})/);
-      
-      // Parse duration (in:Xd)
-      const durationMatch = input.match(/in:(\d+(?:\.\d+)?)\s*(m|min|minute|minutes|h|hr|hour|hours|d|day|days|w|week|weeks)/i);
-      
-      // Remove date and duration syntax from title
-      let title = input
-        .replace(/by:\d{4}-\d{2}-\d{2}/, '')
-        .replace(/in:\d+(?:\.\d+)?\s*(?:m|min|minute|minutes|h|hr|hour|hours|d|day|days|w|week|weeks)/i, '')
-        .trim();
 
-      let dueDate = null;
-      
-      if (dateMatch) {
-        dueDate = new Date(dateMatch[1]);
-      } else if (durationMatch) {
-        const [_, value, unit] = durationMatch;
-        const numValue = parseFloat(value);
-        const now = new Date();
-        
-        switch (unit.toLowerCase()[0]) {
-          case 'w':
-            dueDate = new Date(now.getTime() + numValue * 7 * 24 * 60 * 60 * 1000);
-            break;
-          case 'd':
-            dueDate = new Date(now.getTime() + numValue * 24 * 60 * 60 * 1000);
-            break;
-          case 'h':
-            dueDate = new Date(now.getTime() + numValue * 60 * 60 * 1000);
-            break;
-          case 'm':
-            dueDate = new Date(now.getTime() + numValue * 60 * 1000);
-            break;
-        }
-      }
+    if (!input.trim()) return;
+
+    try {
+      const { title, dueDate } = parseMilestoneDueDate(input);
 
       const milestoneData = {
         projectId: id,
@@ -292,27 +306,33 @@ export default function ProjectPage() {
       };
 
       const docRef = await addDoc(collection(db, 'milestones'), milestoneData);
-      
-      const milestone = {
-        id: docRef.id,
-        ...milestoneData,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      } as Milestone;
+      const docSnap = await getDoc(doc(db, "milestones", docRef.id));
 
-      setMilestones([...milestones, milestone]);
-      toast.success('Milestone added');
-      e.currentTarget.reset();
+      if (docSnap.exists()) {
+        const milestone = { id: docSnap.id, ...docSnap.data() } as Milestone;
+        setMilestones([...milestones, {...milestone}]);
+
+        toast.success("Milestone added");
+      }
     } catch (error) {
       console.error('Error adding milestone:', error);
       toast.error('Failed to add milestone');
     }
   };
 
-  const handleAddNote = async (content: string) => {
+  // const handleAddNote = async (content: string) => {
+  const handleAddNote = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const title = formData.get('noteTitle') as string;
+    const content = formData.get('noteContent') as string;
+
+    if (!title.trim() || !content.trim()) return;
+
     try {
       const noteData = {
         projectId: id,
+        title: title.trim(),
         content: content.trim(),
         createdBy: user!.uid,
         createdAt: serverTimestamp(),
@@ -320,8 +340,14 @@ export default function ProjectPage() {
       };
 
       const docRef = await addDoc(collection(db, 'notes'), noteData);
-      setNotes([...notes, { id: docRef.id, ...noteData } as Note]);
-      toast.success('Note added');
+      const docSnap = await getDoc(doc(db, "notes", docRef.id));
+
+      if (docSnap.exists()) {
+        const note = { id: docSnap.id, ...docSnap.data() } as Note;
+        setNotes([...notes, {...note}]);
+
+        toast.success("Note added");
+      }
     } catch (error) {
       toast.error('Failed to add note');
     }
@@ -336,6 +362,24 @@ export default function ProjectPage() {
       toast.error('Failed to delete note');
     }
   };
+
+  const handleEditNote = async (noteId: string, title: string, content: string) => {
+    try {
+      await updateDoc(doc(db, 'notes', noteId), {
+        title: title.trim(),
+        content: content.trim(),
+        updatedAt: serverTimestamp()
+      });
+
+      setNotes(notes.map(note =>
+        note.id === noteId ? { ...note, title, content } : note
+      ));
+      toast.success('Note updated');
+    } catch (error) {
+      toast.error('Failed to update note');
+    }
+  };
+
 
   const handleAddSecret = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -356,8 +400,14 @@ export default function ProjectPage() {
       };
 
       const docRef = await addDoc(collection(db, 'secrets'), secretData);
-      setSecrets([...secrets, { id: docRef.id, ...secretData } as Secret]);
-      toast.success('Secret added');
+      const docSnap = await getDoc(doc(db, "secrets", docRef.id));
+
+      if (docSnap.exists()) {
+        const secret = { id: docSnap.id, ...docSnap.data() } as Secret;
+        setSecrets([...secrets, {...secret}]);
+
+        toast.success("Secret added");
+      }
     } catch (error) {
       toast.error('Failed to add secret');
     }
@@ -370,6 +420,23 @@ export default function ProjectPage() {
       toast.success('Secret deleted');
     } catch (error) {
       toast.error('Failed to delete secret');
+    }
+  };
+
+  const handleEditSecret = async (secretId: string, name: string, value: string) => {
+    try {
+      await updateDoc(doc(db, 'secrets', secretId), {
+        name: name.trim(),
+        value: value.trim(),
+        updatedAt: serverTimestamp()
+      });
+
+      setSecrets(secrets.map(secret =>
+          secret.id === secretId ? { ...secret, name, value } : secret
+      ));
+      toast.success('Secret updated');
+    } catch (error) {
+      toast.error('Failed to update secret');
     }
   };
 
@@ -392,8 +459,14 @@ export default function ProjectPage() {
       };
 
       const docRef = await addDoc(collection(db, 'project_links'), linkData);
-      setLinks([...links, { id: docRef.id, ...linkData } as ProjectLink]);
-      toast.success('Link added');
+      const docSnap = await getDoc(doc(db, "project_links", docRef.id));
+
+      if (docSnap.exists()) {
+        const link = { id: docSnap.id, ...docSnap.data() } as ProjectLink;
+        setLinks([...links, {...link}]);
+
+        toast.success("Link added");
+      }
     } catch (error) {
       toast.error('Failed to add link');
     }
@@ -406,6 +479,24 @@ export default function ProjectPage() {
       toast.success('Link deleted');
     } catch (error) {
       toast.error('Failed to delete link');
+    }
+  };
+
+  const handleEditLink = async (secretId: string, name: string, url: string, type: ProjectLink['type']) => {
+    try {
+      await updateDoc(doc(db, 'project_links', secretId), {
+        name: name.trim(),
+        url: url.trim(),
+        type,
+        updatedAt: serverTimestamp()
+      });
+
+      setLinks(links.map(link =>
+          link.id === secretId ? { ...link, name, url, type } : link
+      ));
+      toast.success('Link updated');
+    } catch (error) {
+      toast.error('Failed to update link');
     }
   };
 
@@ -429,90 +520,89 @@ export default function ProjectPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950">
-      <Sidebar />
-      <Header />
-      <main className={cn(
-        "transition-all duration-300",
-        sidebarExpanded ? "pl-64" : "pl-20"
-      )}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <button
+      <div>
+        <button
             onClick={() => navigate('/dashboard')}
-            className="inline-flex items-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 mb-8"
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Dashboard
-          </button>
+            className="hidden sm:inline-flex items-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 mb-8"
+        >
+          <ArrowLeft className="h-4 w-4 mr-1"/>
+          Back to Dashboard
+        </button>
 
-          <ProjectHeader 
+        <ProjectHeader
             project={project}
             onProjectUpdate={(updatedProject) => setProject(updatedProject)}
-          />
-          
-          {/* Stats Cards with Glass Morphism */}
-          <div className="mb-8 rounded-xl bg-white/10 backdrop-blur-lg border border-white/20 dark:bg-gray-800/10">
-            <ProjectStats project={project} tasks={tasks} milestones={milestones} />
-          </div>
+        />
 
-          <div className="grid grid-cols-12 gap-8">
-            {/* Main Content (8 columns) */}
-            <div className="col-span-12 lg:col-span-8 space-y-8">
-              {/* Tasks Card */}
-              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-xl shadow-lg border border-white/20 dark:border-gray-700/20 overflow-hidden">
-                <TaskList
+        {/* Stats Cards with Glass Morphism */}
+        <div className="mb-8 rounded-xl bg-white/10 backdrop-blur-lg dark:bg-gray-800/10">
+          <ProjectStats project={project} tasks={tasks} milestones={milestones}/>
+        </div>
+
+        <div className="grid grid-cols-12 gap-8">
+          {/* Main Content (8 columns) */}
+          <div className="col-span-12 lg:col-span-8 space-y-8">
+            {/* Tasks Card */}
+            <div
+                className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-xl shadow-lg border border-white/20 dark:border-gray-700/20 overflow-hidden">
+              <TaskList
                   tasks={tasks}
                   onToggleTask={handleToggleTask}
                   onEditTask={handleEditTask}
                   onDeleteTask={handleDeleteTask}
                   onAddTask={handleAddTask}
-                />
-              </div>
+              />
+            </div>
 
-              {/* Milestones Card */}
-              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-xl shadow-lg border border-white/20 dark:border-gray-700/20 overflow-hidden">
-                <MilestoneList
+            {/* Milestones Card */}
+            <div
+                className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-xl shadow-lg border border-white/20 dark:border-gray-700/20 overflow-hidden">
+              <MilestoneList
                   milestones={milestones}
                   onToggleMilestone={handleToggleMilestone}
                   onEditMilestone={handleEditMilestone}
                   onDeleteMilestone={handleDeleteMilestone}
                   onAddMilestone={handleAddMilestone}
-                />
-              </div>
+              />
             </div>
+          </div>
 
-            {/* Sidebar Content (4 columns) */}
-            <div className="col-span-12 lg:col-span-4 space-y-8">
-              {/* Links Card */}
-              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-xl shadow-lg border border-white/20 dark:border-gray-700/20">
-                <LinkList
+          {/* Sidebar Content (4 columns) */}
+          <div className="col-span-12 lg:col-span-4 space-y-8">
+            {/* Links Card */}
+            <div
+                className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-xl shadow-lg border border-white/20 dark:border-gray-700/20">
+              <LinkList
                   links={links}
                   onDeleteLink={handleDeleteLink}
                   onAddLink={handleAddLink}
-                />
-              </div>
+                  onEditLink={handleEditLink}
+              />
+            </div>
 
-              {/* Notes Card */}
-              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-xl shadow-lg border border-white/20 dark:border-gray-700/20">
-                <NoteList
+            {/* Notes Card */}
+            <div
+                className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-xl shadow-lg border border-white/20 dark:border-gray-700/20">
+              <NoteList
                   notes={notes}
+                  onUpdateNote={handleEditNote}
                   onDeleteNote={handleDeleteNote}
                   onAddNote={handleAddNote}
-                />
-              </div>
+              />
+            </div>
 
-              {/* Secrets Card */}
-              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-xl shadow-lg border border-white/20 dark:border-gray-700/20">
-                <SecretList
+            {/* Secrets Card */}
+            <div
+                className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-xl shadow-lg border border-white/20 dark:border-gray-700/20">
+              <SecretList
                   secrets={secrets}
+                  onEditSecret={handleEditSecret}
                   onDeleteSecret={handleDeleteSecret}
                   onAddSecret={handleAddSecret}
-                />
-              </div>
+              />
             </div>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
   );
 }

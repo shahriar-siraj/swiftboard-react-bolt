@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate, Link } from 'react-router-dom';
-import { 
-  Plus, 
-  Rocket, 
-  Clock, 
-  CheckCircle, 
-  BarChart3, 
+import {
+  Plus,
+  Rocket,
+  Clock,
+  CheckCircle,
+  BarChart3,
   Calendar,
   ArrowRight,
   Search,
@@ -19,6 +19,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import type { Project, Task } from '../lib/types';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
+import {cn} from "../lib/utils.ts";
 
 interface ProjectWithProgress extends Project {
   progress: number;
@@ -46,33 +47,62 @@ export default function Dashboard({ defaultFilter = 'all' }: DashboardProps) {
       if (!user) return;
 
       try {
-        const projectsRef = collection(db, 'projects');
-        const projectsQuery = query(projectsRef, where('creatorId', '==', user.uid));
-        const projectsSnapshot = await getDocs(projectsQuery);
-        const projectsData = projectsSnapshot.docs.map(doc => ({
+        const projectsRef = collection(db, "projects");
+        const projectMembersRef = collection(db, "project_members");
+        const tasksRef = collection(db, "tasks");
+
+        // Step 1: Get all projectIds where the user is a member
+        const projectMembersQuery = query(projectMembersRef, where("userId", "==", user.uid), where("role", "==", "member"));
+        const projectMembersSnapshot = await getDocs(projectMembersQuery);
+
+        const projectIds = projectMembersSnapshot.docs.map(doc => doc.data().projectId);
+
+        // Step 2: Query projects where the user is the creator
+        let projectsQuery = query(projectsRef, where("creatorId", "==", user.uid));
+        const creatorProjectsSnapshot = await getDocs(projectsQuery);
+        const creatorProjects = creatorProjectsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
           progress: 0
         })) as ProjectWithProgress[];
 
-        const projectsWithProgress = await Promise.all(
-          projectsData.map(async (project) => {
-            const tasksRef = collection(db, 'tasks');
-            const tasksQuery = query(tasksRef, where('projectId', '==', project.id));
-            const tasksSnapshot = await getDocs(tasksQuery);
-            const tasks = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Task[];
-            
-            const progress = tasks.length > 0
-              ? Math.round((tasks.filter(t => t.status === 'done').length / tasks.length) * 100)
-              : 0;
+        let memberProjects: ProjectWithProgress[] = [];
 
-            return { ...project, progress };
-          })
+        // Step 3: Fetch projects where the user is a member (if there are any)
+        if (projectIds.length > 0) {
+          const memberProjectsQuery = query(projectsRef, where("__name__", "in", projectIds));
+          const memberProjectsSnapshot = await getDocs(memberProjectsQuery);
+          memberProjects = memberProjectsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            progress: 0
+          })) as ProjectWithProgress[];
+        }
+
+        // Combine both sets of projects
+        const allProjects = [...creatorProjects, ...memberProjects];
+
+        // Step 4: Compute progress for each project
+        const projectsWithProgress = await Promise.all(
+            allProjects.map(async (project) => {
+              const tasksQuery = query(tasksRef, where("projectId", "==", project.id));
+              const tasksSnapshot = await getDocs(tasksQuery);
+              const tasks = tasksSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+              })) as Task[];
+
+              const progress = tasks.length > 0
+                  ? Math.round((tasks.filter(t => t.status === "done").length / tasks.length) * 100)
+                  : 0;
+
+              return { ...project, progress };
+            })
         );
 
         setProjects(projectsWithProgress);
       } catch (error) {
-        console.error('Error fetching projects:', error);
+        console.error("Error fetching projects:", error);
       } finally {
         setLoading(false);
       }
@@ -87,22 +117,22 @@ export default function Dashboard({ defaultFilter = 'all' }: DashboardProps) {
 
   const getFilteredProjects = () => {
     let filtered = projects;
-    
+
     if (filter !== 'all') {
       filtered = filtered.filter(project => project.status === filter);
     }
-    
+
     if (searchQuery) {
-      filtered = filtered.filter(project => 
+      filtered = filtered.filter(project =>
         project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (project.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
       );
     }
-    
+
     if (defaultFilter === 'favorites') {
       filtered = filtered.filter(project => project.isStarred);
     }
-    
+
     return filtered;
   };
 
@@ -118,18 +148,18 @@ export default function Dashboard({ defaultFilter = 'all' }: DashboardProps) {
     thisMonth: projects.filter(p => {
       const projectDate = new Date(p.createdAt);
       const now = new Date();
-      return projectDate.getMonth() === now.getMonth() && 
+      return projectDate.getMonth() === now.getMonth() &&
              projectDate.getFullYear() === now.getFullYear();
     }).length
   };
 
   const formatDate = (date: any) => {
     if (!date) return 'No date set';
-    
+
     if (date.seconds) {
       return new Date(date.seconds * 1000).toLocaleDateString();
     }
-    
+
     return new Date(date).toLocaleDateString();
   };
 
@@ -176,15 +206,15 @@ export default function Dashboard({ defaultFilter = 'all' }: DashboardProps) {
     </Link>
   );
 
-  const ProjectSection = ({ 
-    title, 
-    icon: Icon, 
-    projects, 
-    emptyMessage 
-  }: { 
-    title: string; 
-    icon: any; 
-    projects: ProjectWithProgress[]; 
+  const ProjectSection = ({
+    title,
+    icon: Icon,
+    projects,
+    emptyMessage
+  }: {
+    title: string;
+    icon: any;
+    projects: ProjectWithProgress[];
     emptyMessage: string;
   }) => (
     <div className="mb-12">
@@ -208,17 +238,13 @@ export default function Dashboard({ defaultFilter = 'all' }: DashboardProps) {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Sidebar />
-      <Header />
-      <main className="pl-64">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div>
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
               <div className="flex items-center">
                 <div className="p-2 rounded-lg bg-primary-100 dark:bg-primary-900">
-                  <Rocket className="h-6 w-6 text-primary-600 dark:text-primary-400" />
+                  <Rocket className="h-6 w-6 text-primary-600 dark:text-primary-400"/>
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Projects</p>
@@ -229,7 +255,7 @@ export default function Dashboard({ defaultFilter = 'all' }: DashboardProps) {
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
               <div className="flex items-center">
                 <div className="p-2 rounded-lg bg-yellow-100 dark:bg-yellow-900">
-                  <Clock className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+                  <Clock className="h-6 w-6 text-yellow-600 dark:text-yellow-400"/>
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Pre-launch</p>
@@ -240,7 +266,7 @@ export default function Dashboard({ defaultFilter = 'all' }: DashboardProps) {
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
               <div className="flex items-center">
                 <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900">
-                  <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
+                  <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400"/>
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Launched</p>
@@ -251,7 +277,7 @@ export default function Dashboard({ defaultFilter = 'all' }: DashboardProps) {
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
               <div className="flex items-center">
                 <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900">
-                  <Calendar className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                  <Calendar className="h-6 w-6 text-purple-600 dark:text-purple-400"/>
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">This Month</p>
@@ -265,21 +291,21 @@ export default function Dashboard({ defaultFilter = 'all' }: DashboardProps) {
           <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
             <div className="flex items-center space-x-4 w-full sm:w-auto">
               <div className="relative flex-1 sm:flex-none">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400"/>
                 <input
-                  type="text"
-                  placeholder="Search projects..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-full sm:w-64 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    type="text"
+                    placeholder="Search projects..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 pr-4 py-2 w-full sm:w-64 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
               <div className="relative">
-                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400"/>
                 <select
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value as 'all' | 'pre_launch' | 'launched')}
-                  className="pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent appearance-none"
+                    value={filter}
+                    onChange={(e) => setFilter(e.target.value as 'all' | 'pre_launch' | 'launched')}
+                    className="pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent appearance-none"
                 >
                   <option value="all">All Projects</option>
                   <option value="pre_launch">Pre-launch</option>
@@ -290,36 +316,34 @@ export default function Dashboard({ defaultFilter = 'all' }: DashboardProps) {
           </div>
 
           {loading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-              <p className="mt-4 text-gray-500 dark:text-gray-400">Loading your projects...</p>
-            </div>
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+                <p className="mt-4 text-gray-500 dark:text-gray-400">Loading your projects...</p>
+              </div>
           ) : (
-            <>
-              <ProjectSection
-                title="Favorite Projects"
-                icon={Star}
-                projects={favoriteProjects}
-                emptyMessage="No favorite projects yet"
-              />
+              <>
+                <ProjectSection
+                    title="Favorite Projects"
+                    icon={Star}
+                    projects={favoriteProjects}
+                    emptyMessage="No favorite projects yet"
+                />
 
-              <ProjectSection
-                title="Active Projects"
-                icon={Inbox}
-                projects={activeProjects}
-                emptyMessage="No active projects"
-              />
+                <ProjectSection
+                    title="Active Projects"
+                    icon={Inbox}
+                    projects={activeProjects}
+                    emptyMessage="No active projects"
+                />
 
-              <ProjectSection
-                title="Archived Projects"
-                icon={Archive}
-                projects={archivedProjects}
-                emptyMessage="No archived projects"
-              />
-            </>
+                <ProjectSection
+                    title="Archived Projects"
+                    icon={Archive}
+                    projects={archivedProjects}
+                    emptyMessage="No archived projects"
+                />
+              </>
           )}
-        </div>
-      </main>
     </div>
   );
 }

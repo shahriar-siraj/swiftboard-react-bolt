@@ -19,13 +19,13 @@ export default function ProjectStats({ project, tasks, milestones }: ProjectStat
 
   const formatDate = (date: any) => {
     if (!date) return null;
-    
+
     const timestamp = date.seconds ? date.seconds * 1000 : date;
     const dateObj = new Date(timestamp);
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - dateObj.getTime());
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 0) {
       return 'Today';
     } else if (diffDays === 1) {
@@ -41,13 +41,13 @@ export default function ProjectStats({ project, tasks, milestones }: ProjectStat
 
   const parseDuration = (duration: string | undefined) => {
     if (!duration) return 0;
-    
+
     const match = duration.match(/(\d+)\s*(day|days|d|week|weeks|w|hour|hours|h|minute|minutes|m)/i);
     if (!match) return 0;
-    
+
     const [_, value, unit] = match;
     const numValue = parseInt(value);
-    
+
     switch (unit.toLowerCase()[0]) {
       case 'w':
         return numValue * 7;
@@ -85,9 +85,9 @@ export default function ProjectStats({ project, tasks, milestones }: ProjectStat
   const timeRequired = calculateTimeRequired();
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+    <div className="grid grid-cols-2 lg:grid-cols-5 gap-6">
       {/* Launch Status */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hidden lg:block">
         <div className="flex items-center">
           <div className={`p-2 rounded-lg ${
             project.status === 'pre_launch'
@@ -105,7 +105,7 @@ export default function ProjectStats({ project, tasks, milestones }: ProjectStat
               {project.status === 'pre_launch' ? 'Expected Launch' : 'Launched'}
             </p>
             <p className="text-lg font-semibold text-gray-900 dark:text-white">
-              {project.status === 'pre_launch' 
+              {project.status === 'pre_launch'
                 ? formatDate(project.expectedLaunchDate) || 'Not set'
                 : formatDate(project.actualLaunchDate)}
             </p>
@@ -114,7 +114,7 @@ export default function ProjectStats({ project, tasks, milestones }: ProjectStat
       </div>
 
       {/* Time Required */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hidden lg:block">
         <div className="flex items-center">
           <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900">
             <Clock className="h-6 w-6 text-blue-600 dark:text-blue-400" />
@@ -129,7 +129,7 @@ export default function ProjectStats({ project, tasks, milestones }: ProjectStat
       </div>
 
       {/* Time Spent */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hidden lg:block">
         <div className="flex items-center">
           <div className="p-2 rounded-lg bg-yellow-100 dark:bg-yellow-900">
             <Clock className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
@@ -150,13 +150,17 @@ export default function ProjectStats({ project, tasks, milestones }: ProjectStat
             <BarChart2 className="h-6 w-6 text-green-600 dark:text-green-400" />
           </div>
           <div className="ml-4">
-            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Task Progress</p>
+            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              {/*<span className=" hidden lg:inline-block">Task Progress</span>*/}
+              {/*<span className="inline-block lg:hidden">Tasks</span>*/}
+              <span className="inline-block">Task Progress</span>
+            </p>
             <div className="flex items-center">
               <p className="text-lg font-semibold text-gray-900 dark:text-white mr-2">
                 {taskProgress}%
               </p>
               <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div 
+                <div
                   className="h-full bg-green-500 rounded-full transition-all duration-500"
                   style={{ width: `${taskProgress}%` }}
                 />
@@ -179,7 +183,7 @@ export default function ProjectStats({ project, tasks, milestones }: ProjectStat
                 {milestoneProgress}%
               </p>
               <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div 
+                <div
                   className="h-full bg-purple-500 rounded-full transition-all duration-500"
                   style={{ width: `${milestoneProgress}%` }}
                 />

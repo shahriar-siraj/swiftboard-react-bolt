@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Rocket, 
-  Coffee, 
-  CheckCircle, 
-  Lock, 
-  Users, 
-  Zap, 
+import {
+  Rocket,
+  Coffee,
+  CheckCircle,
+  Lock,
+  Users,
+  Zap,
   Calendar,
   ClipboardList,
   Key,
@@ -36,15 +36,16 @@ import {
   Trello,
   FileText
 } from 'lucide-react';
-import Navbar from '../components/Navbar';
+import Navbar from './partials/Navbar';
+import Footer from "./partials/Footer";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900" id="home">
       <Navbar />
 
       {/* Hero Section */}
-      <div className="pt-24 pb-16 bg-gradient-to-b from-primary-50 to-white dark:from-gray-900 dark:to-gray-950">
+      <div className="pt-24 pb-16 bg-gradient-to-b from-primary-200 to-white dark:from-gray-900 dark:to-gray-950">
         <div className="container mx-auto px-4 text-center">
           <div className="flex justify-center mb-6">
             <div className="relative animate-float">
@@ -65,7 +66,7 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
             <Link
               to="/signup"
-              className="px-8 py-3 rounded-lg font-semibold bg-primary-600 text-white hover:bg-primary-700 transition-colors shadow-lg hover:shadow-xl"
+              className="px-8 py-3 rounded-lg font-semibold bg-gradient-to-tr from-primary-500 to-accent-500 text-white hover:bg-primary-700 transition-colors shadow-lg hover:shadow-xl"
             >
               Start for Free
             </Link>
@@ -118,7 +119,7 @@ export default function LandingPage() {
       </div>
 
       {/* Tool Comparison Section */}
-      <div className="py-24 bg-gray-50 dark:bg-gray-950">
+      <div className="py-24 bg-gray-50 dark:bg-gray-950" id="comparison">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
             The Right Tool for Small Projects
@@ -213,7 +214,7 @@ export default function LandingPage() {
       </div>
 
       {/* Features Section */}
-      <div className="py-24 bg-white dark:bg-gray-900" id="features">
+      <div className="py-24 bg-gradient-to-b from-accent-50 to-primary-100 dark:from-gray-900 dark:to-gray-900" id="features">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">
             Everything You Need, Nothing You Don't
@@ -238,29 +239,29 @@ export default function LandingPage() {
       </div>
 
       {/* Integration Section */}
-      <div className="py-24 bg-gray-50 dark:bg-gray-950">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">
-            Seamless Integrations
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {integrations.map((integration, index) => (
-              <div
-                key={index}
-                className="p-6 text-center hover:transform hover:scale-105 transition-transform"
-              >
-                <div className="inline-flex p-4 rounded-full bg-white dark:bg-gray-800 shadow-lg mb-4">
-                  <integration.icon className="h-8 w-8 text-primary-600 dark:text-primary-400" />
-                </div>
-                <h3 className="font-semibold">{integration.name}</h3>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/*<div className="py-24 bg-gray-50 dark:bg-gray-950">*/}
+      {/*  <div className="container mx-auto px-4">*/}
+      {/*    <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">*/}
+      {/*      Seamless Integrations*/}
+      {/*    </h2>*/}
+      {/*    <div className="grid grid-cols-2 md:grid-cols-4 gap-8">*/}
+      {/*      {integrations.map((integration, index) => (*/}
+      {/*        <div*/}
+      {/*          key={index}*/}
+      {/*          className="p-6 text-center hover:transform hover:scale-105 transition-transform"*/}
+      {/*        >*/}
+      {/*          <div className="inline-flex p-4 rounded-full bg-white dark:bg-gray-800 shadow-lg mb-4">*/}
+      {/*            <integration.icon className="h-8 w-8 text-primary-600 dark:text-primary-400" />*/}
+      {/*          </div>*/}
+      {/*          <h3 className="font-semibold">{integration.name}</h3>*/}
+      {/*        </div>*/}
+      {/*      ))}*/}
+      {/*    </div>*/}
+      {/*  </div>*/}
+      {/*</div>*/}
 
       {/* Pricing Section */}
-      <div className="py-24 bg-white dark:bg-gray-900" id="pricing">
+      <div className="py-24 bg-gradient-to-b from-primary-100 to-accent-50 dark:from-gray-900 dark:to-gray-900" id="pricing">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
             Simple, Transparent Pricing
@@ -320,7 +321,7 @@ export default function LandingPage() {
               if you find it useful, consider fueling my next coding session!
             </p>
             <a
-              href="https://buymeacoffee.com/your-handle"
+              href="https://ko-fi.com/shahriarsiraj"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center px-8 py-4 rounded-full bg-[#FFDD00] hover:bg-[#FFDD00]/90 text-gray-900 font-bold text-lg transition-transform hover:scale-105 shadow-lg"
@@ -336,112 +337,37 @@ export default function LandingPage() {
       </div>
 
       {/* Testimonials Section */}
-      <div className="py-24 bg-gray-50 dark:bg-gray-950">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">
-            Loved by Indie Developers
-          </h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <div
-                key={index}
-                className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-lg"
-              >
-                <div className="flex items-center mb-4">
-                  <img
-                    src={testimonial.avatar}
-                    alt={testimonial.name}
-                    className="w-12 h-12 rounded-full"
-                  />
-                  <div className="ml-4">
-                    <div className="font-semibold">{testimonial.name}</div>
-                    <div className="text-sm text-gray-500">{testimonial.role}</div>
-                  </div>
-                </div>
-                <p className="text-gray-600 dark:text-gray-400">"{testimonial.text}"</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/*<div className="py-24 bg-gray-50 dark:bg-gray-950">*/}
+      {/*  <div className="container mx-auto px-4">*/}
+      {/*    <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">*/}
+      {/*      Loved by Indie Developers*/}
+      {/*    </h2>*/}
+      {/*    <div className="grid md:grid-cols-3 gap-8">*/}
+      {/*      {testimonials.map((testimonial, index) => (*/}
+      {/*        <div*/}
+      {/*          key={index}*/}
+      {/*          className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-lg"*/}
+      {/*        >*/}
+      {/*          <div className="flex items-center mb-4">*/}
+      {/*            <img*/}
+      {/*              src={testimonial.avatar}*/}
+      {/*              alt={testimonial.name}*/}
+      {/*              className="w-12 h-12 rounded-full"*/}
+      {/*            />*/}
+      {/*            <div className="ml-4">*/}
+      {/*              <div className="font-semibold">{testimonial.name}</div>*/}
+      {/*              <div className="text-sm text-gray-500">{testimonial.role}</div>*/}
+      {/*            </div>*/}
+      {/*          </div>*/}
+      {/*          <p className="text-gray-600 dark:text-gray-400">"{testimonial.text}"</p>*/}
+      {/*        </div>*/}
+      {/*      ))}*/}
+      {/*    </div>*/}
+      {/*  </div>*/}
+      {/*</div>*/}
 
       {/* Footer */}
-      <footer className="bg-white dark:bg-gray-900 py-12">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <h3 className="font-bold text-lg mb-4">Indie SaaS Manager</h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                Built with ❤️ for indie developers.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Product</h4>
-              <ul className="space-y-2">
-                <li>
-                  <Link to="#features" className="text-gray-600 dark:text-gray-400 hover:text-primary-600">
-                    Features
-                  </Link>
-                </li>
-                <li>
-                  <Link to="#pricing" className="text-gray-600 dark:text-gray-400 hover:text-primary-600">
-                    Pricing
-                  </Link>
-                </li>
-                <li>
-                  <Link to="#about" className="text-gray-600 dark:text-gray-400 hover:text-primary-600">
-                    About
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Resources</h4>
-              <ul className="space-y-2">
-                <li>
-                  <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-primary-600">
-                    Documentation
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-primary-600">
-                    Blog
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-primary-600">
-                    Support
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Connect</h4>
-              <div className="flex space-x-4">
-                <a
-                  href="https://twitter.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-600 dark:text-gray-400 hover:text-primary-600"
-                >
-                  <Twitter className="h-6 w-6" />
-                </a>
-                <a
-                  href="https://github.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-600 dark:text-gray-400 hover:text-primary-600"
-                >
-                  <Github className="h-6 w-6" />
-                </a>
-              </div>
-            </div>
-          </div>
-          <div className="border-t border-gray-200 dark:border-gray-800 mt-8 pt-8 text-center text-gray-600 dark:text-gray-400">
-            <p>© {new Date().getFullYear()} Indie SaaS Manager. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+        <Footer />
     </div>
   );
 }

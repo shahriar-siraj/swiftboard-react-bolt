@@ -1,10 +1,12 @@
+import { Timestamp } from "firebase/firestore";
+
 export interface User {
   id: string;
   email: string;
   fullName: string;
   timezone: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Timestamp | null;
+  updatedAt: Timestamp | null;
 }
 
 export interface Project {
@@ -13,10 +15,10 @@ export interface Project {
   name: string;
   description?: string;
   status: 'pre_launch' | 'launched';
-  expectedLaunchDate?: Date;
-  actualLaunchDate?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  expectedLaunchDate?: Timestamp | null;
+  actualLaunchDate?: Timestamp | null;
+  createdAt: Timestamp | null;
+  updatedAt: Timestamp | null;
   template?: string;
   isStarred?: boolean;
   archived?: boolean;
@@ -28,7 +30,7 @@ export interface ProjectMember {
   role: 'owner' | 'member';
   email: string;
   fullName: string;
-  createdAt: Date;
+  createdAt: Timestamp | null;
 }
 
 export interface Task {
@@ -36,14 +38,15 @@ export interface Task {
   projectId: string;
   title: string;
   description: string;
-  type: 'general' | 'future' | 'bug';
+  type: 'general' | 'feature' | 'improvement' | 'bug';
+  // type: 'general' | 'future' | 'bug';
   status: 'todo' | 'in_progress' | 'done';
   priority: 'low' | 'medium' | 'high';
   duration?: string;
-  deadline?: Date;
+  deadline?: Timestamp | null;
   createdBy: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Timestamp | null;
+  updatedAt: Timestamp | null;
 }
 
 export interface Milestone {
@@ -51,10 +54,10 @@ export interface Milestone {
   projectId: string;
   title: string;
   description: string;
-  dueDate?: Date;
+  dueDate?: Timestamp | null;
   completed: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Timestamp | null;
+  updatedAt: Timestamp | null;
 }
 
 export interface Note {
@@ -63,8 +66,8 @@ export interface Note {
   title: string;
   content: string;
   createdBy: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Timestamp | null;
+  updatedAt: Timestamp | null;
 }
 
 export interface ProjectLink {
@@ -73,7 +76,7 @@ export interface ProjectLink {
   name: string;
   url: string;
   type: 'production' | 'staging' | 'development' | 'repository' | 'other';
-  createdAt: Date;
+  createdAt: Timestamp | null;
 }
 
 export interface Secret {
@@ -82,8 +85,8 @@ export interface Secret {
   name: string;
   value: string;
   createdBy: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Timestamp | null;
+  updatedAt: Timestamp | null;
 }
 
 export interface UserSettings {
@@ -91,7 +94,7 @@ export interface UserSettings {
   userId: string;
   theme: 'light' | 'dark';
   emailNotifications: boolean;
-  updatedAt: Date;
+  updatedAt: Timestamp | null;
 }
 
 export interface ProjectReview {
@@ -100,6 +103,6 @@ export interface ProjectReview {
   userId: string;
   rating: number;
   content: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Timestamp | null;
+  updatedAt: Timestamp | null;
 }

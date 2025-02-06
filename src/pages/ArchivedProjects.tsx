@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate, Link } from 'react-router-dom';
-import { 
+import {
   Search,
   Filter,
   BarChart3,
@@ -34,7 +34,7 @@ export default function ArchivedProjects() {
       try {
         const projectsRef = collection(db, 'projects');
         const projectsQuery = query(
-          projectsRef, 
+          projectsRef,
           where('creatorId', '==', user.uid),
           where('archived', '==', true)
         );
@@ -51,7 +51,7 @@ export default function ArchivedProjects() {
             const tasksQuery = query(tasksRef, where('projectId', '==', project.id));
             const tasksSnapshot = await getDocs(tasksQuery);
             const tasks = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Task[];
-            
+
             const progress = tasks.length > 0
               ? Math.round((tasks.filter(t => t.status === 'done').length / tasks.length) * 100)
               : 0;
@@ -77,7 +77,7 @@ export default function ArchivedProjects() {
         archived: false,
         updatedAt: new Date()
       });
-      
+
       setProjects(projects.filter(p => p.id !== projectId));
       toast.success('Project restored successfully');
     } catch (error) {
@@ -90,27 +90,24 @@ export default function ArchivedProjects() {
     return <Navigate to="/login" replace />;
   }
 
-  const filteredProjects = projects.filter(project => 
+  const filteredProjects = projects.filter(project =>
     project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (project.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
   );
 
   const formatDate = (date: any) => {
     if (!date) return 'No date set';
-    
+
     if (date.seconds) {
       return new Date(date.seconds * 1000).toLocaleDateString();
     }
-    
+
     return new Date(date).toLocaleDateString();
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Sidebar />
-      <Header />
-      <main className="pl-20 2xl:pl-64">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div>
+        <div className="">
           <div className="flex items-center justify-between mb-8">
             <h1 className="text-2xl font-semibold text-gray-900 dark:text-white flex items-center">
               <Archive className="h-6 w-6 mr-2 text-gray-500" />
@@ -199,7 +196,6 @@ export default function ArchivedProjects() {
             </div>
           )}
         </div>
-      </main>
 
       {/* Restore Confirmation Modal */}
       {showRestoreModal && (

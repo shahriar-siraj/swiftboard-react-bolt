@@ -22,19 +22,20 @@ export default function TaskList({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState('');
   const [isAddingTask, setIsAddingTask] = useState(false);
+  const [isCompletedTasksVisible, setIsCompletedTasksVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<TaskType>('all');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const parseTaskInput = (input: string) => {
     // Parse type (#bug, #feature, #improvement, #general)
     const typeMatch = input.match(/#(bug|feature|improvement|general)/i);
-    
+
     // Parse priority (!high, !medium, !low)
     const priorityMatch = input.match(/!(high|medium|low)/i);
-    
+
     // Parse duration (in:2d, in:1w, in:30m, etc)
     const durationMatch = input.match(/in:(\d+(?:\.\d+)?)\s*(m|min|minute|minutes|h|hr|hour|hours|d|day|days|w|week|weeks)/i);
-    
+
     // Remove all special syntax from title
     let title = input
       .replace(/#(bug|feature|improvement|general)/i, '')
@@ -47,7 +48,7 @@ export default function TaskList({
     if (durationMatch) {
       const [_, value, unit] = durationMatch;
       const numValue = parseFloat(value);
-      
+
       switch (unit.toLowerCase()[0]) {
         case 'w':
           duration = `${numValue} week${numValue === 1 ? '' : 's'}`;
@@ -66,8 +67,8 @@ export default function TaskList({
 
     return {
       title,
-      type: (typeMatch?.[1].toLowerCase() as Task['type']) || 'general',
-      priority: (priorityMatch?.[1].toLowerCase() as Task['priority']) || 'low',
+      type: (typeMatch?.[1].toLowerCase() as Task['type']) || 'feature',
+      priority: (priorityMatch?.[1].toLowerCase() as Task['priority']) || '',
       duration
     };
   };
@@ -106,11 +107,11 @@ export default function TaskList({
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const input = formData.get('taskInput') as string;
-    
+
     if (!input.trim()) return;
-    
+
     onAddTask(e);
-    setIsAddingTask(false);
+    // setIsAddingTask(false);
     e.currentTarget.reset();
   };
 
@@ -119,7 +120,7 @@ export default function TaskList({
       case 'high': return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200';
       case 'medium': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200';
       case 'low': return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-200';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-200 hidden';
     }
   };
 
@@ -154,12 +155,12 @@ export default function TaskList({
   }, {} as Record<string, Task[]>);
 
   const tabs: { id: TaskType; label: string; count: number }[] = [
-    { id: 'all', label: 'All Tasks', count: tasks.length },
-    { id: 'bug', label: 'Bugs', count: tasks.filter(t => t.type === 'bug').length },
-    { id: 'feature', label: 'Features', count: tasks.filter(t => t.type === 'feature').length },
-    { id: 'improvement', label: 'Improvements', count: tasks.filter(t => t.type === 'improvement').length },
-    { id: 'general', label: 'General', count: tasks.filter(t => t.type === 'general').length }
-  ].filter(tab => tab.count > 0);
+    { id: 'all', label: 'All Tasks', count: tasks.filter(t => t.status !== 'done').length },
+    { id: 'bug', label: 'Bugs', count: tasks.filter(t => t.type === 'bug' && t.status !== 'done').length },
+    { id: 'feature', label: 'Features', count: tasks.filter(t => t.type === 'feature' && t.status !== 'done').length },
+    { id: 'improvement', label: 'Improvements', count: tasks.filter(t => t.type === 'improvement' && t.status !== 'done').length },
+    // { id: 'general', label: 'General', count: tasks.filter(t => t.type === 'general' && t.status !== 'done').length }
+  ].filter(tab => tab.count > -1);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
@@ -243,7 +244,7 @@ export default function TaskList({
                         value={editingContent}
                         onChange={(e) => setEditingContent(e.target.value)}
                         onBlur={handleEditSave}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none resize-none"
                         rows={2}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {
@@ -268,9 +269,9 @@ export default function TaskList({
                       >
                         <Square className="h-5 w-5 text-gray-400 group-hover:text-primary-500" />
                       </button>
-                      
-                      <div className="flex-1 flex items-center justify-between">
-                        <span 
+
+                      <div className="flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                        <span
                           className="text-gray-900 dark:text-white cursor-text"
                           onClick={() => handleEditStart(task)}
                         >
@@ -311,7 +312,7 @@ export default function TaskList({
                     name="taskInput"
                     placeholder="Add a task... Use !priority #type in:duration
 Example: Implement login page !high #feature in:3d"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none resize-none"
                     rows={2}
                     autoFocus
                     onBlur={(e) => {
@@ -351,11 +352,11 @@ Example: Implement login page !high #feature in:3d"
         {/* Completed Tasks */}
         {groupedTasks.done?.length > 0 && (
           <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-              Completed Tasks
+            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2 cursor-pointer" onClick={() => setIsCompletedTasksVisible(!isCompletedTasksVisible)}>
+              <span>{isCompletedTasksVisible ? 'Hide' : 'Show'}</span> Completed Tasks
             </h3>
             <div className="space-y-2">
-              {groupedTasks.done.map(task => (
+              {isCompletedTasksVisible && groupedTasks.done.map(task => (
                 <div
                   key={task.id}
                   className="group flex items-center hover:bg-gray-100 dark:hover:bg-gray-800/50 p-3 rounded-lg"

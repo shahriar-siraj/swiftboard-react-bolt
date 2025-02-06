@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { 
-  User, 
-  Lock, 
-  Globe, 
+import {
+  User,
+  Lock,
+  Globe,
   AlertTriangle,
   Loader2,
   X
 } from 'lucide-react';
 import { auth, db } from '../lib/firebase';
-import { 
-  updatePassword, 
-  deleteUser, 
-  EmailAuthProvider, 
-  reauthenticateWithCredential 
+import {
+  updatePassword,
+  deleteUser,
+  EmailAuthProvider,
+  reauthenticateWithCredential
 } from 'firebase/auth';
 import { doc, updateDoc, deleteDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
@@ -74,7 +74,7 @@ export default function Settings() {
 
       // Update password
       await updatePassword(user, newPassword);
-      
+
       toast.success('Password updated successfully');
       setCurrentPassword('');
       setNewPassword('');
@@ -110,13 +110,13 @@ export default function Settings() {
       for (const projectDoc of projectsSnapshot.docs) {
         const projectId = projectDoc.id;
         const collections = ['tasks', 'milestones', 'notes', 'project_members', 'project_links', 'secrets'];
-        
+
         // Delete all related collections
         for (const collectionName of collections) {
           const itemsRef = collection(db, collectionName);
           const q = query(itemsRef, where('projectId', '==', projectId));
           const snapshot = await getDocs(q);
-          
+
           for (const doc of snapshot.docs) {
             await deleteDoc(doc.ref);
           }
@@ -131,7 +131,7 @@ export default function Settings() {
 
       // Finally, delete the user account
       await deleteUser(user);
-      
+
       toast.success('Account deleted successfully');
     } catch (error) {
       toast.error('Failed to delete account');
@@ -142,11 +142,8 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Sidebar />
-      <Header />
-      <main className="pl-20 2xl:pl-64 transition-all duration-300">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div>
+        <div>
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-8">Account Settings</h1>
 
           {/* Profile Settings */}
@@ -168,7 +165,7 @@ export default function Settings() {
                     id="fullName"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    className="block w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="block w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
                   />
                 </div>
                 <div>
@@ -240,7 +237,7 @@ export default function Settings() {
                     id="currentPassword"
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="block w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="block w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
                     required
                   />
                 </div>
@@ -253,7 +250,7 @@ export default function Settings() {
                     id="newPassword"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="block w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="block w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
                     required
                   />
                 </div>
@@ -266,7 +263,7 @@ export default function Settings() {
                     id="confirmPassword"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="block w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="block w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
                     required
                   />
                 </div>
@@ -311,7 +308,6 @@ export default function Settings() {
             </div>
           </div>
         </div>
-      </main>
 
       {/* Delete Account Modal */}
       {showDeleteModal && (
@@ -345,7 +341,7 @@ export default function Settings() {
                     type="password"
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="block w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    className="block w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none"
                     placeholder="Current password"
                     required
                   />
@@ -358,7 +354,7 @@ export default function Settings() {
                     type="text"
                     value={deleteConfirmation}
                     onChange={(e) => setDeleteConfirmation(e.target.value)}
-                    className="block w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    className="block w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none"
                     placeholder={user.email || ''}
                     required
                   />

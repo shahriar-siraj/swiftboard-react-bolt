@@ -6,7 +6,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './lib/firebase';
 import { useAuthStore } from './store/auth';
 
-import LandingPage from './pages/LandingPage';
+import LandingPage from './pages/frontend/LandingPage';
 import Dashboard from './pages/Dashboard';
 import AllProjects from './pages/AllProjects';
 import ArchivedProjects from './pages/ArchivedProjects';
@@ -16,6 +16,10 @@ import SignUp from './pages/SignUp';
 import Project from './pages/Project';
 import NewProject from './pages/NewProject';
 import Settings from './pages/Settings';
+import Sidebar from "./components/Sidebar.tsx";
+import Header from "./components/Header.tsx";
+import ScrollToTop from './components/ScrollToTop';
+import {cn} from "./lib/utils.ts";
 
 // Protected Route wrapper component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -36,12 +40,25 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/login" replace />;
   }
 
-  return <>{children}</>;
+  // return <>{children}</>;
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <Sidebar/>
+      <Header/>
+      <main className={cn(
+          "transition-all duration-300 pl-0 sm:pl-20"
+      )}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:mt-0 mt-[30px]">
+          {children}
+        </div>
+      </main>
+    </div>
+  )
 };
 
 function App() {
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
-  const { setUser, setLoading } = useAuthStore();
+  const {setUser, setLoading} = useAuthStore();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -56,6 +73,7 @@ function App() {
     <div className={isDarkMode ? 'dark' : ''}>
       <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
         <Router>
+          <ScrollToTop />
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<LandingPage />} />

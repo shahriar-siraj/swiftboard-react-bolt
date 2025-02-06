@@ -20,25 +20,13 @@ export default function MilestoneList({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState('');
   const [isAddingMilestone, setIsAddingMilestone] = useState(false);
+  const [isCompletedMilestonesVisible, setIsCompletedMilestonesVisible] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  const parseMilestoneInput = (input: string) => {
-    // Parse deadline (by:YYYY-MM-DD)
-    const dateMatch = input.match(/by:(\d{4}-\d{2}-\d{2})/);
-    
-    // Remove date syntax from title
-    let title = input.replace(/by:\d{4}-\d{2}-\d{2}/, '').trim();
-    
-    return {
-      title,
-      dueDate: dateMatch?.[1] || null
-    };
-  };
 
   const handleEditStart = (milestone: Milestone) => {
     let content = milestone.title;
     if (milestone.dueDate) {
-      const date = new Date(milestone.dueDate);
+      const date = new Date(milestone.dueDate.seconds * 1000);
       content += ` by:${date.toISOString().split('T')[0]}`;
     }
 
@@ -55,8 +43,7 @@ export default function MilestoneList({
 
   const handleEditSave = async () => {
     if (!editingId || !editingContent.trim()) return;
-    const { title } = parseMilestoneInput(editingContent);
-    await onEditMilestone(editingId, title);
+    await onEditMilestone(editingId, editingContent);
     setEditingId(null);
     setEditingContent('');
   };
@@ -70,9 +57,9 @@ export default function MilestoneList({
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const input = formData.get('milestoneInput') as string;
-    
+
     if (!input.trim()) return;
-    
+
     onAddMilestone(e);
     setIsAddingMilestone(false);
     e.currentTarget.reset();
@@ -147,7 +134,7 @@ export default function MilestoneList({
                         value={editingContent}
                         onChange={(e) => setEditingContent(e.target.value)}
                         onBlur={handleEditSave}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none resize-none"
                         rows={2}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {
@@ -172,7 +159,7 @@ export default function MilestoneList({
                       </button>
                       <div className="flex-1 flex items-center justify-between">
                         <div>
-                          <span 
+                          <span
                             className="text-gray-900 dark:text-white cursor-text"
                             onClick={() => handleEditStart(milestone)}
                           >
@@ -181,7 +168,7 @@ export default function MilestoneList({
                           {milestone.dueDate && (
                             <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200">
                               <Calendar className="h-3 w-3 mr-1" />
-                              {new Date(milestone.dueDate).toLocaleDateString()}
+                              { milestone.dueDate?.toDate ? milestone.dueDate?.toDate().toLocaleDateString() : 'Invalid Date' }
                             </span>
                           )}
                         </div>
@@ -204,7 +191,7 @@ export default function MilestoneList({
                     name="milestoneInput"
                     placeholder="Add a milestone... Use by:YYYY-MM-DD for due date
 Example: Launch beta version by:2024-03-01"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none resize-none"
                     rows={2}
                     autoFocus
                     onBlur={(e) => {
@@ -241,11 +228,11 @@ Example: Launch beta version by:2024-03-01"
           {/* Completed Milestones */}
           {milestones.some(m => m.completed) && (
             <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50">
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                Completed Milestones
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2 cursor-pointer" onClick={() => setIsCompletedMilestonesVisible(!isCompletedMilestonesVisible)}>
+                <span>{isCompletedMilestonesVisible ? 'Hide' : 'Show'}</span> Completed Milestones
               </h3>
               <div className="space-y-2">
-                {milestones.filter(m => m.completed).map(milestone => (
+                {isCompletedMilestonesVisible && milestones.filter(m => m.completed).map(milestone => (
                   <div
                     key={milestone.id}
                     className="group flex items-center hover:bg-gray-100 dark:hover:bg-gray-800/50 p-3 rounded-lg"
