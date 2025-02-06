@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased;
+  }
+}
+
+@layer components {
+  .animated-gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-600 via-accent-500 to-primary-600 animate-gradient bg-[length:200%_auto];
+  }
+  
+  .animated-border-gradient {
+    @apply relative rounded-xl overflow-hidden;
+  }
+  
+  .animated-border-gradient::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-primary-500 via-accent-500 to-primary-500 animate-gradient;
+    @apply [background-size:200%_200%] -z-10;
+    margin: -2px;
+  }
+
+  .cta-button {
+    @apply relative inline-flex items-center justify-center px-8 py-3 overflow-hidden font-semibold rounded-lg transition-all duration-300;
+  }
+
+  .cta-button::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-primary-500 via-accent-500 to-primary-500;
+    @apply transition-all duration-500 animate-gradient bg-[length:200%_auto];
+    opacity: 0;
+  }
+
+  .cta-button:hover::before {
+    opacity: 1;
+  }
+
+  .cta-button span {
+    @apply relative z-10 transition-colors duration-300;
+  }
+
+  .cta-button:hover span {
+    @apply text-white;
+  }
+}
+
+.glass-morphism {
+  @apply bg-white/10 backdrop-blur-lg border border-white/20;
+}
+
+.feature-card {
+  @apply relative overflow-hidden rounded-xl p-6 transition-all duration-300;
+  @apply hover:shadow-lg hover:shadow-primary-500/10;
+  @apply before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-br;
+  @apply before:from-white/50 before:to-white/30 dark:before:from-gray-800/50 dark:before:to-gray-800/30;
+  @apply before:opacity-0 hover:before:opacity-100 before:transition-opacity;
+}
+
+.interactive-demo {
+  @apply relative overflow-hidden rounded-xl bg-gradient-to-br from-primary-500/5 to-accent-500/5;
+  @apply border border-primary-200/20 dark:border-primary-700/20;
+  @apply shadow-xl shadow-primary-500/10;
+}
+
+.demo-window {
+  @apply bg-white dark:bg-gray-800 rounded-lg shadow-2xl overflow-hidden;
+  @apply border border-gray-200/50 dark:border-gray-700/50;
+}
+
+.demo-header {
+  @apply flex items-center gap-2 px-4 py-3 border-b border-gray-200/50 dark:border-gray-700/50;
+}
+
+.demo-dot {
+  @apply w-3 h-3 rounded-full;
+}
+
+.demo-content {
+  @apply p-4;
+}
+
+.demo-task {
+  @apply flex items-center gap-3 p-3 rounded-lg;
+  @apply bg-gray-50 dark:bg-gray-700/50 mb-2;
+  @apply animate-slide-up;
+}
+
+.demo-task-checkbox {
+  @apply w-5 h-5 rounded border-2 border-primary-500;
+  @apply flex items-center justify-center;
+}
+
+.demo-task-text {
+  @apply flex-1;
+}
+
+.demo-task-priority {
+  @apply px-2 py-1 rounded-full text-xs font-medium;
+}
+
+.animated-gradient-border {
+  @apply relative rounded-xl overflow-hidden;
+  @apply before:absolute before:inset-0 before:-z-10;
+  @apply before:bg-gradient-to-r before:from-primary-500 before:via-accent-500 before:to-primary-500;
+  @apply before:animate-gradient before:[background-size:200%_200%];
+  @apply before:p-[2px];
+}
