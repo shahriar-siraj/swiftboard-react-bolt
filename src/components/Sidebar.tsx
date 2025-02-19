@@ -23,13 +23,13 @@ export default function Sidebar() {
   const location = useLocation();
   const user = auth.currentUser;
   // Set initial state based on window width
-  const [isExpanded, setIsExpanded] = useState(window.innerWidth >= 1536);
+  const [isExpanded, setIsExpanded] = useState(window.innerWidth >= 1700);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   const handleResize = useCallback(() => {
     const width = window.innerWidth;
     setWindowWidth(width);
-    setIsExpanded(width >= 1536);
+    setIsExpanded(width >= 1700);
   }, []);
 
   const openSidebar = () => {
@@ -122,7 +122,7 @@ export default function Sidebar() {
             )}
         >
           <div className="flex flex-col h-full">
-            {windowWidth < 1536 && (
+            {windowWidth < 1700 && (
                 <button
                     onClick={() => setIsExpanded(!isExpanded)}
                     className="hidden sm:block absolute -right-3 top-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full p-1 hover:bg-gray-100 dark:hover:bg-gray-700"

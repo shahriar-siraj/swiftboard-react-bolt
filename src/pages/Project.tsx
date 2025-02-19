@@ -59,6 +59,17 @@ export default function ProjectPage() {
           ...projectDoc.data()
         } as Project;
 
+        // Check if user is in project_members as an owner or a member
+        const projectMembersRef = collection(db, 'project_members');
+        const q = query(projectMembersRef, where("projectId", "==", id), where("userId", "==", user.uid));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+          toast.error("You are not authorized to view this project");
+          navigate('/dashboard');
+          return;
+        }
+
         setProject(projectData);
 
         // Fetch all data in parallel

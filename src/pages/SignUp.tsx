@@ -116,6 +116,11 @@ export default function SignUp() {
           </div>
 
           <div>
+            <div className="mb-4 px-1 text-sm text-gray-600 dark:text-gray-400">
+              By clicking below to create an account, you agree to the{' '}
+              <Link to="/terms" target="_blank" className="text-primary-600 dark:text-primary-400 hover:underline">Terms of Service</Link> and{' '}
+              <Link to="/privacy" target="_blank" className="text-primary-600 dark:text-primary-400 hover:underline">Privacy Policy</Link>
+            </div>
             <button
               type="submit"
               disabled={loading}

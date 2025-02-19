@@ -8,7 +8,7 @@ export default function Footer() {
         <footer className="bg-white dark:bg-gray-900 py-12">
             <div className="container mx-auto px-4">
                 <div className="grid md:grid-cols-4 gap-8">
-                    <div className="md:col-span-2">
+                    <div className="md:col-span-1">
                         <h3 className="font-bold text-lg mb-4">{Config.APP_DOMAIN_NAME}</h3>
                         <p className="text-gray-600 dark:text-gray-400">
                             Built with ❤️ for indie developers.
@@ -34,26 +34,29 @@ export default function Footer() {
                             </li>
                         </ul>
                     </div>
-                    {/*<div>*/}
-                    {/*    <h4 className="font-semibold mb-4">Resources</h4>*/}
-                    {/*    <ul className="space-y-2">*/}
-                    {/*        <li>*/}
-                    {/*            <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-primary-600">*/}
-                    {/*                Documentation*/}
-                    {/*            </a>*/}
-                    {/*        </li>*/}
-                    {/*        <li>*/}
-                    {/*            <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-primary-600">*/}
-                    {/*                Blog*/}
-                    {/*            </a>*/}
-                    {/*        </li>*/}
-                    {/*        <li>*/}
-                    {/*            <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-primary-600">*/}
-                    {/*                Support*/}
-                    {/*            </a>*/}
-                    {/*        </li>*/}
-                    {/*    </ul>*/}
-                    {/*</div>*/}
+                    <div>
+                        <h4 className="font-semibold mb-4">Useful Links</h4>
+                        <ul className="space-y-2">
+                            <li>
+                                <Link to="/terms" className="text-gray-600 dark:text-gray-400 hover:text-primary-600">
+                                    Terms & Conditions
+                                </Link>
+                            </li>
+                            <li>
+                                <Link to="/privacy" className="text-gray-600 dark:text-gray-400 hover:text-primary-600">
+                                    Privacy Policy
+                                </Link>
+                            </li>
+                            <li>
+                                <a
+                                    href={`mailto:${Config.CONTACT_EMAIL}`}
+                                    className="text-gray-600 dark:text-gray-400 hover:text-primary-600"
+                                >
+                                    Contact Us
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                     <div>
                         <h4 className="font-semibold mb-4">Connect</h4>
                         <div className="flex space-x-4">
@@ -92,4 +95,3 @@ export default function Footer() {
         </footer>
     );
 }
-

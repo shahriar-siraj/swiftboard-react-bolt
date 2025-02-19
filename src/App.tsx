@@ -7,6 +7,8 @@ import { auth } from './lib/firebase';
 import { useAuthStore } from './store/auth';
 
 import LandingPage from './pages/frontend/LandingPage';
+import TermsAndConditions from './pages/frontend/TermsAndConditions';
+import PrivacyPolicy from './pages/frontend/PrivacyPolicy';
 import Dashboard from './pages/Dashboard';
 import AllProjects from './pages/AllProjects';
 import ArchivedProjects from './pages/ArchivedProjects';
@@ -40,7 +42,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/login" replace />;
   }
 
-  // return <>{children}</>;
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Sidebar/>
@@ -77,6 +78,8 @@ function App() {
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<LandingPage />} />
+            <Route path="/terms" element={<TermsAndConditions />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
 

@@ -139,7 +139,7 @@ export default function SecretList({ secrets, onDeleteSecret, onAddSecret, onEdi
                     </h3>
                     <div className="mt-1 flex items-center">
                       <div className="relative">
-                        <code className={`px-2 py-1 text-sm bg-gray-100 dark:bg-gray-800 rounded font-mono transition-all duration-200 ${
+                        <code className={`px-2 py-1 text-sm bg-gray-100 dark:bg-gray-800 rounded font-mono transition-all duration-200 break-all ${
                           !visibleSecrets[secret.id] ? 'blur-sm select-none' : ''
                         }`}>
                           {secret.value}
